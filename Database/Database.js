@@ -1,23 +1,26 @@
 import { Sequelize } from "sequelize";
-import dotenv from "dotenv"; 
-dotenv.config(); 
+
+// TIDAK ADA dotenv.config() di sini karena tidak akan membaca dari .env
 
 const db = new Sequelize(
-    process.env.DB_NAME,     
-    process.env.DB_USER,      
-    process.env.DB_PASSWORD,  
+    "artisandb",                      // Nama database Anda
+    "your_app_user_external",         // Username database Anda
+    "your_strong_password_external",  // Password database Anda
     {
-        host: process.env.DB_HOST,      
-        port: process.env.DB_PORT,      
-        dialect: 'mysql',               
-        logging: false,                
-       
+        host: "34.46.59.140",           // Host database Anda (IP Compute Engine)
+        port: 3306,                     // Port database Anda
+        dialect: 'mysql',               // Dialek database
+        logging: false,                 // Set true untuk melihat query SQL di konsol
+
+        // Konfigurasi Pool Koneksi
         pool: {
             max: 5,
             min: 0,
             acquire: 30000,
             idle: 10000
         },
+
+     
     }
 );
 
