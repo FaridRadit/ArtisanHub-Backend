@@ -1,23 +1,18 @@
-substitutions:
-  _ENV: gs://bucketrawr/.env
+
 steps:
-  # Langkah 1: Mengambil file .env dari Cloud Storage
   - name: 'gcr.io/cloud-builders/gsutil'
     id: Fetch-DotEnv
     args: ['cp', '${_ENV}', '.env']
 
-  # Langkah 2: Membangun image Docker
-  # Jika Anda menggunakan Dockerfile standar di root proyek
   - name: 'gcr.io/cloud-builders/docker'
     id: Build-Docker-Image
+    # Asumsikan Dockerfile sekarang ada di root dari direktori yang di-submit (.)
     args: ['build', '-t', 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${_TAG_NAME}', '.']
 
-  # Langkah 3: Mendorong image Docker ke Google Container Registry (GCR)
   - name: 'gcr.io/cloud-builders/docker'
     id: Push-Docker-Image
     args: ['push', 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${_TAG_NAME}']
 
-  # Langkah 4: Menerapkan (deploy) ke Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     id: Deploy-to-CloudRun
     args:
@@ -30,26 +25,7 @@ steps:
       - '${_REGION}'
       - '--platform'
       - 'managed'
-      # --allow-unauthenticated: Tambahkan ini jika layanan Anda harus dapat diakses publik tanpa otentikasi
-      # - '--allow-unauthenticated'
-      # --port: Opsional, jika aplikasi Anda mendengarkan pada port selain 8080
-      # - '--port'
-      # - '80'
-      # --set-env-vars: Opsional, jika Anda ingin mengatur variabel lingkungan langsung di Cloud Run
-      # - '--set-env-vars'
-      # - 'MY_VAR=value,ANOTHER_VAR=another_value'
-      # --vpc-connector: Opsional, jika Anda perlu menghubungkan Cloud Run ke VPC
-      # - '--vpc-connector'
-      # - 'projects/${PROJECT_ID}/locations/${_REGION}/connectors/my-vpc-connector'
-      # --no-traffic: Opsional, untuk mendeploy tanpa mengarahkan traffic langsung ke revisi baru
-      # - '--no-traffic'
-    # entrypoint: 'bash' # Contoh jika Anda perlu menjalankan skrip kustom sebelum deploy
-    # args:
-    #   - '-c'
-    #   - |
-    #     gcloud run deploy ...
 
-# Substitusi kustom
 substitutions:
   _ENV: 'gs://bucketrawr/.env' # Ganti dengan path Cloud Storage Anda
   _SERVICE_NAME: 'artisanhubbackend' # Ganti dengan nama layanan Cloud Run Anda
