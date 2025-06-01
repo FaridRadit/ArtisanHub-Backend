@@ -54,7 +54,7 @@ app.use("/api/notifications", notificationRoutes);
  */
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+const PORT = process.env.PORT || 8080; 
 
 
 async function syncDatabaseAndStartServer() {
@@ -71,7 +71,7 @@ async function syncDatabaseAndStartServer() {
         
         console.log('All models were synchronized with MySQL successfully.');
 
-        app.listen(8080, () => {
+        app.listen(PORT, () => {
             console.log(`Server running on http://localhost:8080`);
             console.log('Press CTRL+C to stop the server');
         });
