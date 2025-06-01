@@ -1,5 +1,5 @@
 substitutions:
-  _ENV: gs://h-07-450914_cloudbuild/source/.env
+  _ENV: gs://bucketrawr/.env
 
 steps:
   # Step 1: Mengambil file .env dari Cloud Storage
@@ -19,7 +19,7 @@ steps:
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
-        "run", "deploy", "be",
+        "run", "deploy", "backendartisanhub",
         "--image", "gcr.io/$PROJECT_ID/backendartisanhub",
         "--timeout", "1000s",
         "--port", "5000",
