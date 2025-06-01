@@ -1,33 +1,61 @@
 substitutions:
   _ENV: gs://bucketrawr/.env
-
 steps:
-  # Step 1: Mengambil file .env dari Cloud Storage
-  - name: "gcr.io/cloud-builders/gsutil"
-    args: ["cp", "${_ENV}", ".env"]
+  # Langkah 1: Mengambil file .env dari Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    id: Fetch-DotEnv
+    args: ['cp', '${_ENV}', '.env']
 
-  # Step 2: Build image dari folder backend
-  - name: "gcr.io/cloud-builders/docker"
-    dir: "backend"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/backendartisanhub", "."]
+  # Langkah 2: Membangun image Docker
+  # Jika Anda menggunakan Dockerfile standar di root proyek
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build-Docker-Image
+    args: ['build', '-t', 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${_TAG_NAME}', '.']
 
-  # Step 3: Push image ke Container Registry
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/backendartisanhub"]
+  # Langkah 3: Mendorong image Docker ke Google Container Registry (GCR)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Push-Docker-Image
+    args: ['push', 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${_TAG_NAME}']
 
-  # Step 4: Deploy ke Cloud Run
-  - name: "gcr.io/cloud-builders/gcloud"
+  # Langkah 4: Menerapkan (deploy) ke Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: Deploy-to-CloudRun
     args:
-      [
-        "run", "deploy", "backendartisanhub",
-        "--image", "gcr.io/$PROJECT_ID/backendartisanhub",
-        "--timeout", "1000s",
-        "--port", "5000",
-        "--region", "us-central1",
-        "--allow-unauthenticated"
-      ]
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - 'gcr.io/${PROJECT_ID}/${_SERVICE_NAME}:${_TAG_NAME}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      # --allow-unauthenticated: Tambahkan ini jika layanan Anda harus dapat diakses publik tanpa otentikasi
+      # - '--allow-unauthenticated'
+      # --port: Opsional, jika aplikasi Anda mendengarkan pada port selain 8080
+      # - '--port'
+      # - '80'
+      # --set-env-vars: Opsional, jika Anda ingin mengatur variabel lingkungan langsung di Cloud Run
+      # - '--set-env-vars'
+      # - 'MY_VAR=value,ANOTHER_VAR=another_value'
+      # --vpc-connector: Opsional, jika Anda perlu menghubungkan Cloud Run ke VPC
+      # - '--vpc-connector'
+      # - 'projects/${PROJECT_ID}/locations/${_REGION}/connectors/my-vpc-connector'
+      # --no-traffic: Opsional, untuk mendeploy tanpa mengarahkan traffic langsung ke revisi baru
+      # - '--no-traffic'
+    # entrypoint: 'bash' # Contoh jika Anda perlu menjalankan skrip kustom sebelum deploy
+    # args:
+    #   - '-c'
+    #   - |
+    #     gcloud run deploy ...
+
+# Substitusi kustom
+substitutions:
+  _ENV: 'gs://bucketrawr/.env' # Ganti dengan path Cloud Storage Anda
+  _SERVICE_NAME: 'artisanhubbackend' # Ganti dengan nama layanan Cloud Run Anda
+  _REGION: 'asia-southeast2' # Ganti dengan wilayah Cloud Run Anda (misal: us-central1, asia-southeast2)
+  _TAG_NAME: 'latest' # Atau gunakan '$(BUILD_ID)' untuk tag unik per build
+  # _TAG_NAME: '${_SERVICE_NAME}-$(date +%Y%m%d%H%M%S)-$(BUILD_ID)' # Contoh tag unik
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
-timeout: "1600s"
