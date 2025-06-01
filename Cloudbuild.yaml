@@ -29,7 +29,7 @@ steps:
 substitutions:
   _ENV: 'gs://bucketrawr/.env' # Ganti dengan path Cloud Storage Anda
   _SERVICE_NAME: 'artisanhubbackend' # Ganti dengan nama layanan Cloud Run Anda
-  _REGION: 'asia-southeast2' # Ganti dengan wilayah Cloud Run Anda (misal: us-central1, asia-southeast2)
+  _REGION: 'us-central1' # Ganti dengan wilayah Cloud Run Anda (misal: us-central1, asia-southeast2)
   _TAG_NAME: 'latest' # Atau gunakan '$(BUILD_ID)' untuk tag unik per build
   # _TAG_NAME: '${_SERVICE_NAME}-$(date +%Y%m%d%H%M%S)-$(BUILD_ID)' # Contoh tag unik
 
