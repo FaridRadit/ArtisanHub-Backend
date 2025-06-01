@@ -55,7 +55,7 @@ app.use("/api/notifications", notificationRoutes);
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-const PORT = 3000;
+const PORT = 8080;
 
 async function syncDatabaseAndStartServer() {
     try {
