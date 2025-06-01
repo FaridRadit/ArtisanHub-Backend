@@ -1,12 +1,7 @@
 
-FROM node:20-slim AS builder
-
+FROM node:20-alpine
 WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install --omit=dev --production
-
-EXPOSE 8080
-
-CMD ["npm", "start"]
+COPY . .
+RUN npm install
+EXPOSE 3000
+CMD ["node", "Main/main.js"]

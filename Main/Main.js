@@ -71,7 +71,7 @@ async function syncDatabaseAndStartServer() {
         
         console.log('All models were synchronized with MySQL successfully.');
 
-        app.listen(8080, () => {
+        app.listen(3000, () => {
             console.log(`Server running on http://localhost:${PORT}`);
             console.log('Press CTRL+C to stop the server');
         });
