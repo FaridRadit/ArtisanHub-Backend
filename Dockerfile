@@ -21,4 +21,4 @@ EXPOSE 8080
 
 # Define the command to run your application
 # Ini mengasumsikan Anda memiliki script 'start' di package.json Anda (misalnya "start": "node server.js" atau "start": "nodemon index.js")
-CMD ["npm", "start"]
+CMD ["node", "Main/Main.js"]
