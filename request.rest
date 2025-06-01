@@ -1,0 +1,296 @@
+# Variabel Lingkungan (sesuaikan jika perlu)
+# Anda bisa memilih environment aktif di VS Code: Ctrl+Alt+L
+@baseUrl = http://localhost:3000/api
+
+# Variabel Global untuk token (akan diisi setelah login)
+# Pastikan Anda mengupdate token ini setelah setiap login yang berhasil
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ1c2VyYmFydUBleGFtcGxlLmNvbSIsInVzZXJuYW1lIjoidXNlcmJhcnUiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODU4NDA2NSwiZXhwIjoxNzQ4NTg3NjY1fQ.-4TChKjIrxDngAMhupPJeET9tiHSc_VwIbDqYRUhArs
+@artisanToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJhcnRpYmFydSIsImVtYWlsIjoiYXJ0aXNhbmJhcnVAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXJ0aXNhbiIsImlhdCI6MTcxNjk4MjA0OSwiZXhwIjoxNzE2OTg1NjQ5fQ.xyz_contoh_token_jangan_apai_ini
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJhZG1pbmJhcnVAZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImFkbWluYmFydSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc0ODU4NDIyMCwiZXhwIjoxNzQ4NTg3ODIwfQ.KLuLO4uI4_mVXxEJO64LQ_R6NKiw8HV6hirSv0hfeN4
+
+# Variabel untuk ID entitas (salin dari respons POST/GET dan update di sini)
+@userId = 1
+@artisanId = 1
+@productId = 1
+@eventId = 1
+@notificationId = 1
+@deviceTokenValue = "contoh_device_token_dari_fcm_sdk_di_hp_anda"
+
+
+### 1. Autentikasi (AuthController)
+
+# 1.1. Registrasi Pengguna Baru
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "userbaru",
+    "email": "userbaru@example.com",
+    "password": "Password123!",
+    "full_name": "Pengguna Biasa",
+    "role": "user" 
+}
+
+### 1.2. Registrasi Pengrajin (opsional, untuk user yang langsung daftar sebagai artisan)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "artisanbaru",
+    "email": "artisanbaru@example.com",
+    "password": "Password123!",
+    "full_name": "Pengrajin Baru",
+    "role": "artisan"
+}
+
+### 1.3. Registrasi Admin (opsional, untuk user dengan role admin)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "adminbaru",
+    "email": "adminbaru@example.com",
+    "password": "Password123!",
+    "full_name": "Administrator Aplikasi",
+    "role": "admin"
+}
+
+
+### 1.4. Login Pengguna Biasa
+# Setelah berhasil, salin 'token' dari respons ke variabel @authToken
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "userbaru@example.com",
+    "password": "Password123!"
+}
+
+### 1.5. Login Pengrajin
+# Setelah berhasil, salin 'token' dari respons ke variabel @artisanToken
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "artisanbaru@example.com",
+    "password": "Password123!"
+}
+
+### 1.6. Login Admin
+# Setelah berhasil, salin 'token' dari respons ke variabel @adminToken
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "adminbaru@example.com",
+    "password": "Password123!"
+}
+
+
+### 1.7. Dapatkan Profil Pengguna yang Sedang Login
+GET {{baseUrl}}/auth/profile
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+
+### 1.8. Perbarui Profil Pengguna yang Sedang Login
+PUT {{baseUrl}}/auth/profile
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "full_name": "Pengguna Biasa Diperbarui",
+    "phone_number": "08111222333"
+}
+
+### 1.9. Logout Pengguna
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+
+### 2. Pengrajin (ArtisanController)
+
+# 2.1. Dapatkan Semua Pengrajin (dengan filter LBS dan kategori)
+GET {{baseUrl}}/artisans?lat=-7.7886&lon=110.3695&radius=10&category=Batik Tulis&q=pengrajin
+Content-Type: application/json
+
+### 2.2. Dapatkan Pengrajin Berdasarkan ID
+# Ganti {{artisanId}} dengan ID artisan yang sudah ada di database Anda
+GET {{baseUrl}}/artisans/{{artisanId}}
+Content-Type: application/json
+
+
+### 2.3. Buat Profil Pengrajin (oleh Pengrajin/Admin)
+# Gunakan @artisanToken atau @adminToken.
+# Jika Anda login sebagai userbaru@example.com (role 'user') dan membuat ini, role user tersebut akan diupdate jadi artisan.
+# Setelah berhasil, salin 'id' artisan baru dari respons ke variabel @artisanId di bagian atas file ini
+POST {{baseUrl}}/artisans
+Content-Type: application/json
+Authorization: Bearer {{artisanToken}}
+
+{
+    "bio": "Pengrajin seni ukir kayu tradisional khas Jawa.",
+    "expertise_category": "Ukiran Kayu",
+    "address": "Jl. Raya Seni No. 15, Bantul, DI Yogyakarta",
+    "latitude": -7.880000,
+    "longitude": 110.330000,
+    "operational_hours": {
+        "Monday": "09:00-17:00",
+        "Tuesday": "09:00-17:00",
+        "Wednesday": "09:00-17:00",
+        "Thursday": "09:00-17:00",
+        "Friday": "09:00-17:00",
+        "Saturday": "10:00-14:00",
+        "Sunday": "Closed"
+    },
+    "contact_email": "ukirkayu@example.com",
+    "contact_phone": "081212121212",
+    "website_url": "http://www.ukirkayu.com",
+    "social_media_links": {"instagram": "ukir_kayu_yk"}
+}
+
+### 2.4. Perbarui Profil Pengrajin (oleh Pemilik/Admin)
+# Pastikan Anda menggunakan @artisanToken jika Anda adalah pemilik profil, atau @adminToken
+PUT {{baseUrl}}/artisans/{{artisanId}}
+Content-Type: application/json
+Authorization: Bearer {{artisanToken}}
+
+{
+    "bio": "Pengrajin seni ukir kayu modern dan tradisional, spesialis patung.",
+    "contact_phone": "08777666555",
+    "latitude": -7.881000,
+    "longitude": 110.331000
+}
+
+### 2.5. Hapus Profil Pengrajin (Hanya Admin)
+# Pastikan Anda menggunakan @adminToken
+DELETE {{baseUrl}}/artisans/{{artisanId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+
+### 3. Produk (ProductController)
+
+# 3.1. Dapatkan Semua Produk (dengan filter)
+GET {{baseUrl}}/products?category=Patung&q=kayu&limit=5
+Content-Type: application/json
+
+### 3.2. Dapatkan Produk Berdasarkan ID
+# Ganti {{productId}} dengan ID produk yang sudah ada di database Anda
+GET {{baseUrl}}/products/{{productId}}
+Content-Type: application/json
+
+### 3.3. Tambah Produk Baru (oleh Pemilik Pengrajin/Admin)
+# Gunakan @artisanToken jika Anda adalah pemilik profil artisan_id, atau @adminToken
+# Ganti {{artisanId}} dengan ID artisan yang produknya ingin ditambahkan
+# Setelah berhasil, salin 'id' produk baru dari respons ke variabel @productId
+POST {{baseUrl}}/artisans/{{artisanId}}/products
+Content-Type: application/json
+Authorization: Bearer {{artisanToken}}
+
+{
+    "name": "Patung Garuda Kayu",
+    "description": "Patung ukiran garuda dari kayu mahoni.",
+    "price": 750000.00,
+    "currency": "IDR",
+    "main_image_url": "http://example.com/garuda.jpg",
+    "category": "Patung Kayu",
+    "stock_quantity": 3,
+    "is_available": true
+}
+
+### 3.4. Perbarui Produk (oleh Pemilik Pengrajin/Admin)
+# Gunakan @artisanToken jika Anda adalah pemilik produk ini, atau @adminToken
+PUT {{baseUrl}}/products/{{productId}}
+Content-Type: application/json
+Authorization: Bearer {{artisanToken}}
+
+{
+    "description": "Patung ukiran garuda dari kayu mahoni dengan finishing glossy.",
+    "price": 800000.00,
+    "is_available": false
+}
+
+### 3.5. Hapus Produk (oleh Pemilik Pengrajin/Admin)
+# Gunakan @artisanToken jika Anda adalah pemilik produk ini, atau @adminToken
+DELETE {{baseUrl}}/products/{{productId}}
+Content-Type: application/json
+Authorization: Bearer {{artisanToken}}
+
+
+### 4. Event (EventController)
+
+# 4.1. Dapatkan Semua Event (dengan filter tanggal dan lokasi)
+GET {{baseUrl}}/events?date_from=2025-05-01&date_to=2025-12-31&lat=-7.7886&lon=110.3695&radius=20&q=festival
+Content-Type: application/json
+
+### 4.2. Dapatkan Event Berdasarkan ID
+# Ganti {{eventId}} dengan ID event yang sudah ada di database Anda
+GET {{baseUrl}}/events/{{eventId}}
+Content-Type: application/json
+
+### 4.3. Buat Event Baru (Hanya Admin)
+# Gunakan @adminToken
+# Setelah berhasil, salin 'id' event baru dari respons ke variabel @eventId
+POST {{baseUrl}}/events
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Festival Kriya Yogyakarta",
+    "description": "Pameran besar hasil kriya dan seni dari seluruh Yogyakarta.",
+    "start_date": "2025-07-10",
+    "end_date": "2025-07-15",
+    "location_name": "Jogja Expo Center",
+    "address": "Jl. Raya Janti, Yogyakarta",
+    "latitude": -7.801234,
+    "longitude": 110.405678,
+    "organizer": "Dinas Pariwisata DIY",
+    "event_url": "http://www.kriyajogja.com",
+    "poster_image_url": "http://example.com/poster.jpg"
+}
+
+### 4.4. Perbarui Event (Hanya Admin)
+# Gunakan @adminToken
+PUT {{baseUrl}}/events/{{eventId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "description": "Pameran besar hasil kriya dan seni dari seluruh Yogyakarta, kini dengan workshop gratis!",
+    "end_date": "2025-07-17"
+}
+
+### 4.5. Hapus Event (Hanya Admin)
+# Gunakan @adminToken
+DELETE {{baseUrl}}/events/{{eventId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+
+### 5. Notifikasi (NotificationController)
+
+# 5.1. Daftarkan/Perbarui Device Token (oleh Pengguna yang Login)
+# Gunakan @authToken (atau artisan/admin token)
+# Ganti @deviceTokenValue dengan token nyata dari aplikasi mobile Anda
+POST {{baseUrl}}/notifications/register-token
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "device_token": "{{deviceTokenValue}}",
+    "platform": "android"
+}
+
+### 5.2. Dapatkan Notifikasi Pengguna (oleh Pengguna yang Login)
+# Gunakan @authToken (atau artisan/admin token)
+GET {{baseUrl}}/notifications?limit=5&is_read=false
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### 5.3. Tandai Notifikasi sebagai Sudah Dibaca (oleh Pengguna yang Login)
+# Ganti {{notificationId}} dengan ID notifikasi dari GET request sebelumnya
+PUT {{baseUrl}}/notifications/{{notificationId}}/read
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
