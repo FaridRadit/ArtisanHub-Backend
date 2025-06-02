@@ -63,12 +63,12 @@ async function syncDatabaseAndStartServer() {
         console.log('Connection to MySQL database has been established successfully.');
 
         await User.sync({ force: true });
-        await ArtisanProfile.sync({ alter: true });
-        await Product.sync({ alter: true });
-        await Event.sync({ alter: true });
-        await DeviceToken.sync({ alter: true });
-        await Notification.sync({ alter: true });
-        
+        await ArtisanProfile.sync({ force: true });
+        await Product.sync({ force: true });
+        await Event.sync({ force: true });
+        await DeviceToken.sync({ force: true });
+        await Notification.sync({ force: true });
+                
         console.log('All models were synchronized with MySQL successfully.');
 
         app.listen(PORT, () => {
