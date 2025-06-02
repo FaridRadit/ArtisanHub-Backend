@@ -62,7 +62,7 @@ async function syncDatabaseAndStartServer() {
         await db.authenticate();
         console.log('Connection to MySQL database has been established successfully.');
 
-        await User.sync({ alter: true });
+        await User.sync({ force: true });
         await ArtisanProfile.sync({ alter: true });
         await Product.sync({ alter: true });
         await Event.sync({ alter: true });
