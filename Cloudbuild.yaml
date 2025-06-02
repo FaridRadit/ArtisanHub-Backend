@@ -1,37 +1,60 @@
+# cloudbuild.yaml
 
+# Langkah 1: Membangun Docker Image
+# Menggunakan 'cloud-builders/docker' untuk membangun image dari Dockerfile
+# dan menandainya dengan ID commit GitHub ($COMMIT_SHA)
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    id: Build Docker Image
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend-service', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  id: Build
+  args:
+    - 'build'
+    - '-t'
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Menggunakan GCR default, tag dengan COMMIT_SHA
+    - '.' # Konteks build adalah direktori saat ini (root repo Anda)
 
-  - name: 'gcr.io/cloud-builders/docker'
-    id: Push Docker Image
-    args: ['push', 'gcr.io/$PROJECT_ID/backend-service']
+# Langkah 2: Mendorong Docker Image ke Container Registry (GCR)
+# 'cloud-builders/docker' digunakan untuk mendorong image yang sudah dibangun.
+- name: 'gcr.io/cloud-builders/docker'
+  id: Push
+  args:
+    - 'push'
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: Deploy to Cloud Run
-    entrypoint: gcloud
-    args:
-      [
-        'run', 'deploy', 'backend-service',
-        '--image', 'gcr.io/$PROJECT_ID/backend-service',
-        '--region', 'us-central1',
-        '--platform', 'managed',
-        '--allow-unauthenticated'
-      ]
+# Langkah 3: Mendeploy Image ke Cloud Run
+# Aplikasi akan membaca variabel lingkungan dari konfigurasi Cloud Run Services itu sendiri.
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Deploy
+  args:
+    - 'run'
+    - 'deploy'
+    - 'backendartisanhub' # Nama layanan Cloud Run Anda (sesuaikan)
+    - '--image'
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
+    - '--region'
+    - 'asia-southeast2' # Region Cloud Run Anda (sesuaikan)
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated' # Hapus ini jika ingin endpoint Cloud Run diotorisasi oleh IAM
+    - '--timeout'
+    - '300s' # Timeout startup container
+    - '--port'
+    - '8080' # Port yang akan didengarkan aplikasi Anda di Cloud Run
+    - '--cpu'
+    - '1' # Alokasi CPU
+    - '--memory'
+    - '512Mi' # Alokasi memori
+    - '--concurrency'
+    - '80' # Konkurensi per instance
+    - '--min-instances'
+    - '0' # Skala ke 0 untuk paling murah
+    - '--max-instances'
+    - '10' # Batasi instance maksimum
 
+# Properti 'images' memastikan image yang dibangun tersedia untuk langkah-langkah selanjutnya.
 images:
-  - 'gcr.io/$PROJECT_ID/backend-service'
+- 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
-substitutions:
-  
-  _SERVICE_NAME: 'artisanhubbackend' # Ganti dengan nama layanan Cloud Run Anda
-  _REGION: 'us-central1' # Ganti dengan wilayah Cloud Run Anda (misal: us-central1, asia-southeast2)
-  _TAG_NAME: 'latest' # Atau gunakan '$(BUILD_ID)' untuk tag unik per build
-  # _TAG_NAME: '${_SERVICE_NAME}-$(date +%Y%m%d%H%M%S)-$(BUILD_ID)' # Contoh tag unik
-
-options:
-  logging: CLOUD_LOGGING_ONLY
+timeout: "1600s" # Timeout untuk seluruh build
