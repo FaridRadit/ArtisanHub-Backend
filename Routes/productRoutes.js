@@ -2,11 +2,11 @@ import express from 'express';
 import {
     getAllProducts,
     getProductById,
-   createProduct,
+    createProduct,
     updateProduct,
     deleteProduct
-} from '../Controller/productController.js';
-import { authenticateToken, authorizeRole } from '../Middleware/authMiddleware.js';
+} from '../Controller/productController.js'; // Pastikan path ke Controller benar
+import { authenticateToken, authorizeRole } from '../Middleware/authMiddleware.js'; // Pastikan path ke Middleware benar
 
 const router = express.Router();
 
@@ -16,14 +16,15 @@ router.get('/', getAllProducts);
 // GET /api/products/:id - Mendapatkan detail produk (publik, tidak perlu autentikasi)
 router.get('/:id', getProductById);
 
-// POST /api/artisans/:artisan_id/products - Menambah produk baru untuk pengrajin tertentu
-router.post('/:id',authenticateToken,authorizeRole(['artisan','admin']),createProduct);
+// POST /api/products/:artisan_id - Menambah produk baru untuk pengrajin tertentu
+// PERBAIKAN: Ubah ':id' menjadi ':artisan_id' agar sesuai dengan controller
+router.post('/:artisan_id', authenticateToken, authorizeRole(['artisan','admin']), createProduct);
+
 // PUT /api/products/:id - Memperbarui produk
 // Hanya pemilik produk (pengrajin) atau admin yang bisa mengupdate
 router.put('/:id', authenticateToken, authorizeRole(['artisan', 'admin']), updateProduct);
 
 // DELETE /api/products/:id - Menghapus produk
-
 router.delete('/:id', authenticateToken, authorizeRole(['artisan', 'admin']), deleteProduct);
 
 export default router;
