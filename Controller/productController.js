@@ -4,15 +4,15 @@ import { Op } from "sequelize";
 
 async function createProduct(req, res) {
     try {
-        const { artisan_id } = req.params; // artisan_id dari URL (ini adalah user_id dari Flutter)
+        const { artisan_id } = req.params; 
         
         if (!req.user || !req.user.id || !req.user.role) {
             console.error('Error creating product: req.user is undefined or missing properties. Check authMiddleware.');
             return res.status(401).json({ message: "Authentication failed: User information not available." });
         }
-        const userId = req.user.id; // ID pengguna yang terautentikasi
+        const userId = req.user.id;
         const userRole = req.user.role;
-        console.log(`User ID: ${userId}, Role: ${userRole} attempting to create product for artisan_id (from params): ${artisan_id}`);
+        console.log(`User ID: ${userId}, Role: ${userRole} attempting to create product for artisan_id: ${artisan_id}`);
         console.log(`Note: artisan_id from params is likely the user_id from Flutter.`);
 
         const { name, description, price, currency, main_image_url, category, stock_quantity, is_available } = req.body;
@@ -22,8 +22,6 @@ async function createProduct(req, res) {
             return res.status(400).json({ message: "Name, price, and currency are required." });
         }
 
-        // Ganti findByPk(artisan_id) menjadi findOne({ where: { user_id: artisan_id } })
-        // Karena artisan_id yang dikirim dari Flutter adalah user_id.
         const targetArtisanProfile = await ArtisanProfile.findOne({ where: { user_id: artisan_id } }); 
         
         console.log('Target Artisan Profile found by user_id:', targetArtisanProfile ? targetArtisanProfile.toJSON() : 'null');
@@ -32,8 +30,6 @@ async function createProduct(req, res) {
             return res.status(404).json({ message: "Target artisan profile not found for the provided user ID." });
         }
 
-        // Otorisasi: Pastikan pengguna yang terautentikasi adalah pemilik profil artisan ini
-        // atau seorang admin.
         if (userRole === 'artisan' && targetArtisanProfile.user_id !== userId) {
             console.warn(`Forbidden: Artisan ${userId} tried to add product to profile ${targetArtisanProfile.id} (owner user_id: ${targetArtisanProfile.user_id})`);
             return res.status(403).json({ message: "Forbidden: You can only add products to your own artisan profile." });
@@ -42,9 +38,8 @@ async function createProduct(req, res) {
         }
         console.log('Authorization successful for product creation.');
 
-        // Gunakan ID PRIMARY KEY dari targetArtisanProfile yang ditemukan
         const newProduct = await Product.create({
-            artisan_id: targetArtisanProfile.id, // <--- GUNAKAN ID PRIMARY KEY DARI PROFIL ARTISAN YANG DITEMUKAN
+            artisan_id: targetArtisanProfile.id, 
             name,
             description,
             price,
@@ -93,18 +88,9 @@ async function getAllProducts(req, res) {
 
         // --- PERBAIKAN PENTING DI SINI ---
         if (artisanId) {
-            // Jika artisanId (yang adalah user_id dari Flutter) diberikan,
-            // pertama cari ArtisanProfile yang terkait dengan user_id ini.
-            const targetArtisanProfile = await ArtisanProfile.findOne({ where: { user_id: parseInt(artisanId) } });
-            
-            if (!targetArtisanProfile) {
-                // Jika tidak ada profil artisan yang ditemukan untuk user_id ini,
-                // berarti tidak ada produk yang terkait dengan user ini.
-                // Kembalikan status 200 dengan data kosong.
-                return res.status(200).json({ message: "No products found for this artisan user ID.", data: [] });
-            }
-            // Sekarang, filter produk berdasarkan ID primary key ArtisanProfile yang sebenarnya
-            whereClause.artisan_id = targetArtisanProfile.id;
+           
+            whereClause.artisan_id = parseInt(artisanId); 
+            console.log(`Filtering products by ArtisanProfile ID: ${whereClause.artisan_id}`);
         }
         // --- AKHIR PERBAIKAN ---
 
@@ -117,7 +103,6 @@ async function getAllProducts(req, res) {
         });
 
         if (products.length === 0) {
-            // Mengembalikan 200 dengan data kosong jika tidak ada produk yang cocok, bukan 404
             return res.status(200).json({ message: "No products found matching your criteria.", data: [] });
         }
 
