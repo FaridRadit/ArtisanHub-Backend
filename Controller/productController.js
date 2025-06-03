@@ -2,14 +2,10 @@ import Product from "../Database/Table/product.js";
 import ArtisanProfile from "../Database/Table/art.js";
 import { Op } from "sequelize";
 
-// Pastikan Anda hanya memiliki satu definisi untuk createProduct
-// Hapus definisi createProduct yang duplikat jika ada di file ini.
-
 async function createProduct(req, res) {
     try {
-        const { artisan_id } = req.params; // artisan_id dari URL
+        const { artisan_id } = req.params;
         
-        // --- Cek req.user (PENTING) ---
         if (!req.user || !req.user.id || !req.user.role) {
             console.error('Error creating product: req.user is undefined or missing properties. Check authMiddleware.');
             return res.status(401).json({ message: "Authentication failed: User information not available." });
@@ -17,6 +13,7 @@ async function createProduct(req, res) {
         const userId = req.user.id;
         const userRole = req.user.role;
         console.log(`User ID: ${userId}, Role: ${userRole} attempting to create product for artisan_id: ${artisan_id}`);
+        console.log(`Note: artisan_id from params is likely the user_id from Flutter.`);
 
         const { name, description, price, currency, main_image_url, category, stock_quantity, is_available } = req.body;
         console.log('Request body for product:', req.body);
@@ -25,22 +22,16 @@ async function createProduct(req, res) {
             return res.status(400).json({ message: "Name, price, and currency are required." });
         }
 
-        // --- Logika Pencarian Artisan Profile (PENTING) ---
-        // Asumsi: artisan_id dari req.params adalah ID PRIMARY KEY dari ArtisanProfile.
-        // Jika artisan_id sebenarnya user_id, maka gunakan findOne({ where: { user_id: artisan_id } })
-        const targetArtisanProfile = await ArtisanProfile.findByPk(artisan_id); 
+        const targetArtisanProfile = await ArtisanProfile.findOne({ where: { user_id: artisan_id } }); 
         
-        console.log('Target Artisan Profile found:', targetArtisanProfile ? targetArtisanProfile.toJSON() : 'null');
-
+        console.log('Target Artisan Profile found by user_id:', targetArtisanProfile ? targetArtisanProfile.toJSON() : 'null');
 
         if (!targetArtisanProfile) {
-            return res.status(404).json({ message: "Target artisan profile not found with the provided ID." });
+            return res.status(404).json({ message: "Target artisan profile not found for the provided user ID." });
         }
 
-        // --- Logika Otorisasi (PENTING: Cek targetArtisanProfile.user_id) ---
-        // Pastikan targetArtisanProfile memiliki properti user_id.
         if (userRole === 'artisan' && targetArtisanProfile.user_id !== userId) {
-            console.warn(`Forbidden: Artisan ${userId} tried to add product to profile ${targetArtisanProfile.id} (user_id: ${targetArtisanProfile.user_id})`);
+            console.warn(`Forbidden: Artisan ${userId} tried to add product to profile ${targetArtisanProfile.id} (owner user_id: ${targetArtisanProfile.user_id})`);
             return res.status(403).json({ message: "Forbidden: You can only add products to your own artisan profile." });
         } else if (userRole !== 'artisan' && userRole !== 'admin') {
             return res.status(403).json({ message: "Forbidden: Only artisans or admins can add products." });
@@ -48,7 +39,7 @@ async function createProduct(req, res) {
         console.log('Authorization successful for product creation.');
 
         const newProduct = await Product.create({
-            artisan_id: artisan_id, // Gunakan artisan_id dari req.params
+            artisan_id: targetArtisanProfile.id,
             name,
             description,
             price,
@@ -66,7 +57,6 @@ async function createProduct(req, res) {
         });
 
     } catch (error) {
-        // Log error secara lebih detail
         console.error('Error creating product:', error.message);
         if (error.stack) {
             console.error('Error stack:', error.stack);
@@ -96,9 +86,8 @@ async function getAllProducts(req, res) {
             ];
         }
 
-        // Pastikan artisanId di-parse jika datang sebagai string dari query params
         if (artisanId) {
-            whereClause.artisan_id = parseInt(artisanId); // Pastikan ini integer
+            whereClause.artisan_id = parseInt(artisanId);
         }
 
         const products = await Product.findAll({
@@ -154,7 +143,6 @@ async function updateProduct(req, res) {
     try {
         const { id } = req.params;
         
-        // --- Cek req.user (PENTING) ---
         if (!req.user || !req.user.id || !req.user.role) {
             console.error('Error updating product: req.user is undefined or missing properties. Check authMiddleware.');
             return res.status(401).json({ message: "Authentication failed: User information not available." });
@@ -172,12 +160,10 @@ async function updateProduct(req, res) {
 
         const owningArtisanProfile = await ArtisanProfile.findByPk(product.artisan_id);
         
-        // --- FIX START: Pastikan owningArtisanProfile tidak null sebelum diakses ---
         if (!owningArtisanProfile) {
             console.error('Owning artisan profile not found for product_id:', id, 'artisan_id:', product.artisan_id);
             return res.status(404).json({ message: "Owning artisan profile not found for this product." });
         }
-        // --- FIX END ---
 
         if (userRole === 'artisan' && owningArtisanProfile.user_id !== userId) {
             console.warn(`Forbidden: Artisan ${userId} tried to update product ${id} belonging to artisan user_id: ${owningArtisanProfile.user_id}`);
@@ -211,7 +197,6 @@ async function deleteProduct(req, res) {
     try {
         const { id } = req.params;
 
-        // --- Cek req.user (PENTING) ---
         if (!req.user || !req.user.id || !req.user.role) {
             console.error('Error deleting product: req.user is undefined or missing properties. Check authMiddleware.');
             return res.status(401).json({ message: "Authentication failed: User information not available." });
@@ -229,13 +214,10 @@ async function deleteProduct(req, res) {
 
         const owningArtisanProfile = await ArtisanProfile.findByPk(product.artisan_id);
         
-        // --- FIX START: Pastikan owningArtisanProfile tidak null sebelum diakses ---
         if (!owningArtisanProfile) {
             console.error('Owning artisan profile not found for product_id:', id, 'artisan_id:', product.artisan_id);
             return res.status(404).json({ message: "Owning artisan profile not found for this product." });
         }
-        // --- FIX END ---
-
 
         if (userRole === 'artisan' && owningArtisanProfile.user_id !== userId) {
             console.warn(`Forbidden: Artisan ${userId} tried to delete product ${id} belonging to artisan user_id: ${owningArtisanProfile.user_id}`);
