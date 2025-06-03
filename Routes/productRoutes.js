@@ -2,7 +2,7 @@ import express from 'express';
 import {
     getAllProducts,
     getProductById,
-    // createProduct,
+   createProduct,
     updateProduct,
     deleteProduct
 } from '../Controller/productController.js';
@@ -17,7 +17,7 @@ router.get('/', getAllProducts);
 router.get('/:id', getProductById);
 
 // POST /api/artisans/:artisan_id/products - Menambah produk baru untuk pengrajin tertentu
-
+router.post('/:artisan_id',createProduct);
 // PUT /api/products/:id - Memperbarui produk
 // Hanya pemilik produk (pengrajin) atau admin yang bisa mengupdate
 router.put('/:id', authenticateToken, authorizeRole(['artisan', 'admin']), updateProduct);
