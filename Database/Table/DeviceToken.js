@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from "sequelize";
 import db from "../Database.js";
-import User from "./user.js"; // Pastikan path model User benar
+import User from "./user.js"; 
 
 const DeviceToken = db.define("DeviceToken", {
     id: {
@@ -34,7 +34,7 @@ const DeviceToken = db.define("DeviceToken", {
     }
 }, {
     tableName: 'device_tokens',
-    timestamps: true, // DeviceToken menggunakan createdAt dan updatedAt
+    timestamps: true,
     underscored: true,
     indexes: [
         {

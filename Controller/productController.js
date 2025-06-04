@@ -88,7 +88,9 @@ async function getAllProducts(req, res) {
 
         // --- PERBAIKAN PENTING DI SINI ---
         if (artisanId) {
-           
+            // Asumsi: artisanId yang datang dari query parameter adalah ArtisanProfile.id (primary key)
+            // yang diteruskan dari Flutter (selectedArtisan.id!).
+            // Jadi, langsung gunakan ID ini untuk memfilter produk.
             whereClause.artisan_id = parseInt(artisanId); 
             console.log(`Filtering products by ArtisanProfile ID: ${whereClause.artisan_id}`);
         }
