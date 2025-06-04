@@ -144,50 +144,6 @@ async function getProductById(req, res) {
     }
 }
 
-async function createProduct(req, res) {
-    try {
-        const { artisan_id } = req.params;
-        const userId = req.user.id;
-        const userRole = req.user.role;
-
-        const { name, description, price, currency, main_image_url, category, stock_quantity, is_available } = req.body;
-        if (!name || !price || !currency) {
-            return res.status(400).json({ message: "Name, price, and currency are required." });
-        }
-
-        const targetArtisanProfile = await ArtisanProfile.findByPk(artisan_id);
-        if (!targetArtisanProfile) {
-            return res.status(404).json({ message: "Target artisan profile not found." });
-        }
-
-        if (userRole === 'artisan' && targetArtisanProfile.user_id !== userId) {
-            return res.status(403).json({ message: "Forbidden: You can only add products to your own artisan profile." });
-        } else if (userRole !== 'artisan' && userRole !== 'admin') {
-            return res.status(403).json({ message: "Forbidden: Only artisans or admins can add products." });
-        }
-
-        const newProduct = await Product.create({
-            artisan_id: artisan_id,
-            name,
-            description,
-            price,
-            currency,
-            main_image_url,
-            category,
-            stock_quantity,
-            is_available
-        });
-
-        res.status(201).json({
-            message: "Product created successfully",
-            data: newProduct
-        });
-
-    } catch (error) {
-        console.error('Error creating product:', error.message);
-        res.status(500).json({ message: "Server error creating product", error: error.message });
-    }
-}
 
 async function updateProduct(req, res) {
     try {
