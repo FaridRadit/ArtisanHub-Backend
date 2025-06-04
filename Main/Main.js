@@ -1,10 +1,11 @@
+// Main.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import db from '../Database/Database.js';
-import swaggerJsdoc from 'swagger-jsdoc'; 
-import swaggerUi from 'swagger-ui-express'; 
-import swaggerOptions from '../config/swaggerOptions.js'; 
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import swaggerOptions from '../config/swaggerOptions.js';
 import User from '../Database/Table/user.js';
 import ArtisanProfile from '../Database/Table/art.js';
 import Product from '../Database/Table/product.js';
@@ -29,43 +30,29 @@ app.use("/api/products", productRoutes);
 app.use("/api/artisans", artisanRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/notifications", notificationRoutes);
-/**
- * @swagger
- * tags:
- * name: General
- * description: Endpoint umum untuk status API.
- */
 
-/**
- * @swagger
- * /:
- * get:
- * summary: Mendapatkan pesan selamat datang dari API
- * tags: [General]
- * description: Endpoint ini mengembalikan pesan sederhana untuk mengkonfirmasi bahwa API backend berjalan dan dapat diakses.
- * responses:
- * 200:
- * description: Pesan selamat datang berhasil diterima.
- * content:
- * text/plain:
- * schema:
- * type: string
- * example: Welcome to Artisan Hub Backend API!
- */
+// Tambahkan endpoint root API secara eksplisit (opsional, jika Anda ingin pesan sambutan)
+app.get('/', (req, res) => {
+    res.send('Welcome to Artisan Hub Backend API!');
+});
+
+// Pindahkan Swagger UI ke path yang lebih spesifik
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-const PORT = process.env.PORT || 8080; 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec)); // UBAH BARIS INI
 
+const PORT = process.env.PORT || 8080;
 
 async function syncDatabaseAndStartServer() {
     try {
         await db.authenticate();
         console.log('Connection to MySQL database has been established successfully.');
- 
+
+        // Jika Anda memiliki model yang belum disinkronkan, Anda mungkin perlu db.sync()
+        // await db.sync({ force: false }); // Gunakan ini hanya jika Anda ingin menghapus dan membuat ulang tabel
         console.log('All models were synchronized with MySQL successfully.');
 
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:8080`);
+            console.log(`Server running on http://localhost:${PORT}`);
             console.log('Press CTRL+C to stop the server');
         });
     } catch (error) {
