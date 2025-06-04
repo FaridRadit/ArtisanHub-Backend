@@ -7,8 +7,9 @@ import { Op } from "sequelize";
 
 async function createProduct(req, res) {
     try {
-        const { artisan_id } = req.params; // artisan_id dari URL
-        
+        // Ambil artisan_id dari req.body, bukan req.params
+        const { artisan_id, name, description, price, currency, main_image_url, category, stock_quantity, is_available } = req.body;
+
         // --- Cek req.user (PENTING) ---
         if (!req.user || !req.user.id || !req.user.role) {
             console.error('Error creating product: req.user is undefined or missing properties. Check authMiddleware.');
@@ -16,39 +17,32 @@ async function createProduct(req, res) {
         }
         const userId = req.user.id;
         const userRole = req.user.role;
-        console.log(`User ID: ${userId}, Role: ${userRole} attempting to create product for artisan_id: ${artisan_id}`);
+        console.log(`User ID: ${userId}, Role: ${userRole} attempting to create product for artisan_id: ${artisan_id}`); // Log ini bisa dipertahankan untuk debugging
 
-        const { name, description, price, currency, main_image_url, category, stock_quantity, is_available } = req.body;
-        console.log('Request body for product:', req.body);
-
-        if (!name || !price || !currency) {
-            return res.status(400).json({ message: "Name, price, and currency are required." });
+        if (!artisan_id || !name || !price || !currency) { // Tambahkan validasi untuk artisan_id
+            return res.status(400).json({ message: "Artisan ID, name, price, and currency are required." });
         }
 
         // --- Logika Pencarian Artisan Profile (PENTING) ---
-        // Asumsi: artisan_id dari req.params adalah ID PRIMARY KEY dari ArtisanProfile.
-        // Jika artisan_id sebenarnya user_id, maka gunakan findOne({ where: { user_id: artisan_id } })
         const targetArtisanProfile = await ArtisanProfile.findByPk(artisan_id); 
         
-        console.log('Target Artisan Profile found:', targetArtisanProfile ? targetArtisanProfile.toJSON() : 'null');
-
+        console.log('Target Artisan Profile found:', targetArtisanProfile ? targetArtisanProfile.toJSON() : 'null'); // Log ini bisa dipertahankan
 
         if (!targetArtisanProfile) {
             return res.status(404).json({ message: "Target artisan profile not found with the provided ID." });
         }
 
         // --- Logika Otorisasi (PENTING: Cek targetArtisanProfile.user_id) ---
-        // Pastikan targetArtisanProfile memiliki properti user_id.
         if (userRole === 'artisan' && targetArtisanProfile.user_id !== userId) {
-            console.warn(`Forbidden: Artisan ${userId} tried to add product to profile ${targetArtisanProfile.id} (user_id: ${targetArtisanProfile.user_id})`);
+            console.warn(`Forbidden: Artisan ${userId} tried to add product to profile ${targetArtisanProfile.id} (user_id: ${targetArtisanProfile.user_id})`); // Log ini bisa dipertahankan
             return res.status(403).json({ message: "Forbidden: You can only add products to your own artisan profile." });
         } else if (userRole !== 'artisan' && userRole !== 'admin') {
             return res.status(403).json({ message: "Forbidden: Only artisans or admins can add products." });
         }
-        console.log('Authorization successful for product creation.');
+        console.log('Authorization successful for product creation.'); // Log ini bisa dipertahankan
 
         const newProduct = await Product.create({
-            artisan_id: artisan_id, // Gunakan artisan_id dari req.params
+            artisan_id: artisan_id, // Gunakan artisan_id dari req.body
             name,
             description,
             price,
@@ -58,7 +52,7 @@ async function createProduct(req, res) {
             stock_quantity,
             is_available
         });
-        console.log('Product created in DB:', newProduct.toJSON());
+        console.log('Product created in DB:', newProduct.toJSON()); // Log ini bisa dipertahankan
 
         res.status(201).json({
             message: "Product created successfully",
@@ -66,7 +60,6 @@ async function createProduct(req, res) {
         });
 
     } catch (error) {
-        // Log error secara lebih detail
         console.error('Error creating product:', error.message);
         if (error.stack) {
             console.error('Error stack:', error.stack);

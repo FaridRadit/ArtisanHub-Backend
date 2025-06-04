@@ -16,8 +16,8 @@ router.get('/', getAllProducts);
 // GET /api/products/:id - Mendapatkan detail produk (publik, tidak perlu autentikasi)
 router.get('/:id', getProductById);
 
-// POST /api/artisans/:artisan_id/products - Menambah produk baru untuk pengrajin tertentu
-router.post('/:id',createProduct);
+
+router.post('/', authenticateToken, authorizeRole(['artisan', 'admin']));
 // PUT /api/products/:id - Memperbarui produk
 // Hanya pemilik produk (pengrajin) atau admin yang bisa mengupdate
 router.put('/:id', authenticateToken, authorizeRole(['artisan', 'admin']), updateProduct);
