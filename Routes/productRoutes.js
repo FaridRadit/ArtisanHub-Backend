@@ -17,7 +17,7 @@ router.get('/', getAllProducts);
 router.get('/:id', getProductById);
 
 
-router.post('/', authenticateToken, authorizeRole(['artisan', 'admin']));
+router.post('/', authenticateToken, authorizeRole(['artisan', 'admin']), createProduct);
 // PUT /api/products/:id - Memperbarui produk
 // Hanya pemilik produk (pengrajin) atau admin yang bisa mengupdate
 router.put('/:id', authenticateToken, authorizeRole(['artisan', 'admin']), updateProduct);
