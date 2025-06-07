@@ -18,7 +18,7 @@ import productRoutes from "../Routes/productRoutes.js";
 import eventRoutes from "../Routes/eventRoutes.js";
 import notificationRoutes from "../Routes/notificationRoutes.js";
 
-dotenv.config({path:'../.env'});
+ dotenv.config();
 
 const app = express();
 

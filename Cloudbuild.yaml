@@ -1,81 +1,78 @@
+# cloudbuild.yaml
+substitutions:
+  _ENV_BUCKET_PATH: gs://h-07-450914_cloudbuild/artisandb/.env # Jalur lengkap ke file .env di GCS bucket
+
 steps:
-# Step 1: Build Docker Image
-# Menggunakan builder 'docker' untuk membangun image dari Dockerfile di direktori saat ini.
-# Image akan diberi tag dengan ID proyek Anda dan SHA commit saat ini.
+# Langkah 1: Mengunduh file .env dari GCS bucket
+# File .env akan diunduh ke root direktori proyek Anda
+# Ini penting agar Dockerfile Anda dapat menemukan dan menyalinnya ke dalam image.
+- name: "gcr.io/cloud-builders/gsutil"
+  id: GetEnvFile
+  args: ["cp", "${_ENV_BUCKET_PATH}", "./.env"] # Salin ke root direktori build (./.env)
+  # Catatan: Pastikan akun layanan Cloud Build memiliki izin "Storage Object Viewer"
+  # pada bucket "gs://h-07-450914_cloudbuild".
+
+# Langkah 2: Membangun Docker Image
+# Dockerfile Anda harus menyertakan langkah untuk menyalin file .env ini ke dalam image.
+# Misalnya: COPY .env /app/.env
 - name: 'gcr.io/cloud-builders/docker'
   id: Build
   args:
     - 'build'
     - '-t'
-    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Tag image untuk Google Container Registry (GCR)
-    - '.' # Konteks build adalah direktori saat ini (root repository Anda)
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Tag image untuk GCR
+    - '.' # Konteks build adalah direktori saat ini (root repo Anda)
 
-# Step 2: Push Docker Image ke Container Registry (GCR)
-# Menggunakan builder 'docker' lagi untuk mendorong image yang sudah dibangun ke GCR.
+# Langkah 3: Mendorong Docker Image ke Container Registry (GCR)
 - name: 'gcr.io/cloud-builders/docker'
   id: Push
   args:
     - 'push'
     - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
 
-# Step 3: Deploy Image ke Cloud Run
-# Aplikasi akan membaca variabel lingkungan dari konfigurasi layanan Cloud Run itu sendiri.
-# Variabel non-sensitif disetel menggunakan flag '--set-env-vars'.
-# Variabel sensitif diambil dari Google Secret Manager menggunakan flag '--set-secrets'.
+# Langkah 4: Mendeploy Image ke Cloud Run
+# Dalam skenario ini, aplikasi Anda di dalam container akan membaca file .env yang telah disalin.
+# Oleh karena itu, kita TIDAK perlu menyetel variabel lingkungan secara eksplisit dengan --set-env-vars
+# atau --set-secrets di sini, kecuali ada variabel yang Anda inginkan untuk Cloud Run injeksikan.
 - name: 'gcr.io/cloud-builders/gcloud'
   id: Deploy
   args:
     - 'run'
     - 'deploy'
-    - 'backendartisanhub' # Nama layanan Cloud Run Anda (sesuaikan jika berbeda)
+    - 'backendartisanhub' # Nama layanan Cloud Run Anda (sesuaikan)
     - '--image'
-    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Image yang akan di-deploy
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
     - '--region'
     - 'asia-southeast2' # Region Cloud Run Anda (sesuaikan)
     - '--platform'
-    - 'managed' # Menentukan platform sebagai Cloud Run terkelola
-    - '--allow-unauthenticated' # Hapus baris ini jika Anda ingin endpoint Cloud Run memerlukan otorisasi IAM
+    - 'managed'
+    - '--allow-unauthenticated' # Hapus ini jika ingin endpoint Cloud Run diotorisasi oleh IAM
     - '--timeout'
     - '300s' # Timeout startup container
     - '--port'
-    - '8080' # Port yang akan didengarkan aplikasi Anda di dalam container
+    - '8080' # Port yang akan didengarkan aplikasi Anda di Cloud Run
     - '--cpu'
-    - '1' # Alokasi CPU untuk setiap instance
+    - '1' # Alokasi CPU
     - '--memory'
-    - '512Mi' # Alokasi memori untuk setiap instance
+    - '512Mi' # Alokasi memori
     - '--concurrency'
-    - '80' # Konkurensi maksimum permintaan per instance
+    - '80' # Konkurensi per instance
     - '--min-instances'
-    - '0' # Skala ke 0 instance saat tidak ada traffic (paling hemat biaya)
+    - '0' # Skala ke 0 untuk paling murah
     - '--max-instances'
-    - '10' # Batasi instance maksimum untuk mengontrol biaya
-    # Variabel lingkungan yang tidak sensitif atau kurang sensitif
-    # Ini akan disetel langsung sebagai variabel lingkungan di Cloud Run.
-    - '--set-env-vars'
-    - |
-      NODE_ENV=production,
-      DB_HOST=34.46.59.140,
-      DB_PORT=3306,
-      DB_USER=admin,
-      DB_NAME=artisandb
-    # Rahasia (diambil dari Google Secret Manager)
-    # Formatnya adalah NAMA_VARIABEL_DI_APLIKASI=NAMA_RAHASIA_DI_SECRET_MANAGER:versi
-    # Pastikan rahasia ini telah Anda buat di Secret Manager
-    # dan akun layanan Cloud Run Anda memiliki peran 'Secret Manager Secret Accessor'.
-    - '--set-secrets'
-    - |
-      DB_PASSWORD=DB_PASSWORD_SECRET:latest,
-      JWT_SECRET=JWT_SECRET_KEY:latest,
-      FIREBASE_SERVICE_ACCOUNT_KEY_BASE64=FIREBASE_SERVICE_ACCOUNT_KEY:latest
+    - '10' # Batasi instance maksimum
+    # Jika Anda masih memiliki beberapa variabel lingkungan yang ingin Anda atur langsung oleh Cloud Run,
+    # daripada membacanya dari .env di dalam container, Anda bisa menambahkannya di sini.
+    # Contoh:
+    # - '--set-env-vars'
+    # - |
+    #   NODE_ENV=production,
+    #   SOME_OTHER_VAR=value_here
 
-# Properti 'images' memastikan image yang dibangun tersedia untuk langkah-langkah selanjutnya
-# dan akan menjadi bagian dari daftar image yang dihasilkan oleh Cloud Build.
 images:
 - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
 
-# Opsi logging untuk Cloud Build.
 options:
   logging: CLOUD_LOGGING_ONLY
 
-# Timeout total untuk seluruh proses build.
-timeout: "1600s"
+timeout: "1600s" # Timeout untuk seluruh build
