@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_for_both_files'; // Ubah ini
+const JWT_SECRET = process.env.JWT_SECRET 
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];

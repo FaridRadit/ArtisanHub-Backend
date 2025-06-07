@@ -1,60 +1,81 @@
-# cloudbuild.yaml
-
-# Langkah 1: Membangun Docker Image
-# Menggunakan 'cloud-builders/docker' untuk membangun image dari Dockerfile
-# dan menandainya dengan ID commit GitHub ($COMMIT_SHA)
 steps:
+# Step 1: Build Docker Image
+# Menggunakan builder 'docker' untuk membangun image dari Dockerfile di direktori saat ini.
+# Image akan diberi tag dengan ID proyek Anda dan SHA commit saat ini.
 - name: 'gcr.io/cloud-builders/docker'
   id: Build
   args:
     - 'build'
     - '-t'
-    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Menggunakan GCR default, tag dengan COMMIT_SHA
-    - '.' # Konteks build adalah direktori saat ini (root repo Anda)
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Tag image untuk Google Container Registry (GCR)
+    - '.' # Konteks build adalah direktori saat ini (root repository Anda)
 
-# Langkah 2: Mendorong Docker Image ke Container Registry (GCR)
-# 'cloud-builders/docker' digunakan untuk mendorong image yang sudah dibangun.
+# Step 2: Push Docker Image ke Container Registry (GCR)
+# Menggunakan builder 'docker' lagi untuk mendorong image yang sudah dibangun ke GCR.
 - name: 'gcr.io/cloud-builders/docker'
   id: Push
   args:
     - 'push'
     - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
 
-# Langkah 3: Mendeploy Image ke Cloud Run
-# Aplikasi akan membaca variabel lingkungan dari konfigurasi Cloud Run Services itu sendiri.
+# Step 3: Deploy Image ke Cloud Run
+# Aplikasi akan membaca variabel lingkungan dari konfigurasi layanan Cloud Run itu sendiri.
+# Variabel non-sensitif disetel menggunakan flag '--set-env-vars'.
+# Variabel sensitif diambil dari Google Secret Manager menggunakan flag '--set-secrets'.
 - name: 'gcr.io/cloud-builders/gcloud'
   id: Deploy
   args:
     - 'run'
     - 'deploy'
-    - 'backendartisanhub' # Nama layanan Cloud Run Anda (sesuaikan)
+    - 'backendartisanhub' # Nama layanan Cloud Run Anda (sesuaikan jika berbeda)
     - '--image'
-    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
+    - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA' # Image yang akan di-deploy
     - '--region'
     - 'asia-southeast2' # Region Cloud Run Anda (sesuaikan)
     - '--platform'
-    - 'managed'
-    - '--allow-unauthenticated' # Hapus ini jika ingin endpoint Cloud Run diotorisasi oleh IAM
+    - 'managed' # Menentukan platform sebagai Cloud Run terkelola
+    - '--allow-unauthenticated' # Hapus baris ini jika Anda ingin endpoint Cloud Run memerlukan otorisasi IAM
     - '--timeout'
     - '300s' # Timeout startup container
     - '--port'
-    - '8080' # Port yang akan didengarkan aplikasi Anda di Cloud Run
+    - '8080' # Port yang akan didengarkan aplikasi Anda di dalam container
     - '--cpu'
-    - '1' # Alokasi CPU
+    - '1' # Alokasi CPU untuk setiap instance
     - '--memory'
-    - '512Mi' # Alokasi memori
+    - '512Mi' # Alokasi memori untuk setiap instance
     - '--concurrency'
-    - '80' # Konkurensi per instance
+    - '80' # Konkurensi maksimum permintaan per instance
     - '--min-instances'
-    - '0' # Skala ke 0 untuk paling murah
+    - '0' # Skala ke 0 instance saat tidak ada traffic (paling hemat biaya)
     - '--max-instances'
-    - '10' # Batasi instance maksimum
+    - '10' # Batasi instance maksimum untuk mengontrol biaya
+    # Variabel lingkungan yang tidak sensitif atau kurang sensitif
+    # Ini akan disetel langsung sebagai variabel lingkungan di Cloud Run.
+    - '--set-env-vars'
+    - |
+      NODE_ENV=production,
+      DB_HOST=34.46.59.140,
+      DB_PORT=3306,
+      DB_USER=admin,
+      DB_NAME=artisandb
+    # Rahasia (diambil dari Google Secret Manager)
+    # Formatnya adalah NAMA_VARIABEL_DI_APLIKASI=NAMA_RAHASIA_DI_SECRET_MANAGER:versi
+    # Pastikan rahasia ini telah Anda buat di Secret Manager
+    # dan akun layanan Cloud Run Anda memiliki peran 'Secret Manager Secret Accessor'.
+    - '--set-secrets'
+    - |
+      DB_PASSWORD=DB_PASSWORD_SECRET:latest,
+      JWT_SECRET=JWT_SECRET_KEY:latest,
+      FIREBASE_SERVICE_ACCOUNT_KEY_BASE64=FIREBASE_SERVICE_ACCOUNT_KEY:latest
 
-# Properti 'images' memastikan image yang dibangun tersedia untuk langkah-langkah selanjutnya.
+# Properti 'images' memastikan image yang dibangun tersedia untuk langkah-langkah selanjutnya
+# dan akan menjadi bagian dari daftar image yang dihasilkan oleh Cloud Build.
 images:
 - 'gcr.io/$PROJECT_ID/backendartisanhub:$COMMIT_SHA'
 
+# Opsi logging untuk Cloud Build.
 options:
   logging: CLOUD_LOGGING_ONLY
 
-timeout: "1600s" # Timeout untuk seluruh build
+# Timeout total untuk seluruh proses build.
+timeout: "1600s"
